@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Quest Log"/>
+<meta name="theme-color" content="#0A0E1A"/>
+<title>Quest Log</title>
+
+<!-- PWA manifest inline -->
+<script>
+const manifest = {
+  name: "Quest Log",
+  short_name: "Quest",
+  start_url: "./",
+  display: "standalone",
+  background_color: "#0A0E1A",
+  theme_color: "#F4A000",
+  icons: [{ src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230A0E1A'/%3E%3Ctext y='.9em' font-size='80' x='10'%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" }]
+};
+const blob = new Blob([JSON.stringify(manifest)], {type: "application/json"});
+const url  = URL.createObjectURL(blob);
+const link = document.createElement("link");
+link.rel  = "manifest"; link.href = url;
+document.head.appendChild(link);
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+<style>
+:root{
+  --bg:#0A0E1A;--bg2:#0D1220;--panel:#0F1628;
+  --or:#F4A000;--or2:#FF8C00;
+  --tx:#E8EAF0;--tx2:#8899AA;--tx3:#3a4f65;
+  --gr:#00D4AA;--rd:#FF4455;--bl:#00BFFF;
+  --bd:rgba(244,160,0,.22);--bd2:rgba(244,160,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);font-family:'Barlow',sans-serif;color:var(--tx);overflow-x:hidden}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--or)}
+
+/* ── CLIP PATHS ── */
+.cc{clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
+.cc-lg{clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px))}
+.hex{clip-path:polygon(50% 0%,95% 25%,95% 75%,50% 100%,5% 75%,5% 25%);display:flex;align-items:center;justify-content:center}
+
+/* ── XP BAR ── */
+.xpfill{height:100%;background:linear-gradient(90deg,#FF6B00,#F4A000,#FFD700);transition:width 1s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;box-shadow:0 0 8px rgba(244,160,0,.5)}
+.xpfill::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:shim 2.5s infinite}
+@keyframes shim{to{left:200%}}
+
+/* ── QUEST ROW ── */
+.qrow{display:flex;margin-bottom:6px;cursor:pointer;transition:transform .15s}
+.qrow:active{transform:scale(.99)}
+.qi{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;background:var(--panel);border:1px solid var(--bd2);clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));transition:background .2s,border-color .2s}
+.qrow:hover .qi,.qrow:focus .qi{background:rgba(244,160,0,.06);border-color:var(--bd)}
+.qrow.done .qi{background:rgba(244,160,0,.03);border-color:rgba(244,160,0,.07)}
+.qrow.done .qt{text-decoration:line-through;color:var(--tx3)}
+
+/* ── OCTAGON CHECK ── */
+.chk{width:27px;height:27px;flex-shrink:0;background:rgba(255,255,255,.04);border:2px solid rgba(244,160,0,.3);clip-path:polygon(15% 0%,85% 0%,100% 15%,100% 85%,85% 100%,15% 100%,0% 85%,0% 15%);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;transition:all .25s;color:transparent}
+.chk.on{background:linear-gradient(135deg,#FF6B00,#F4A000);border-color:transparent;box-shadow:0 0 14px rgba(244,160,0,.6);color:#000}
+
+/* ── BUTTONS ── */
+.btn{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:none;cursor:pointer;transition:all .18s;-webkit-tap-highlight-color:transparent}
+.btn-ow{background:linear-gradient(135deg,#C47800,#F4A000);color:#000;padding:10px 22px;font-size:13px;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);box-shadow:0 0 16px rgba(244,160,0,.25)}
+.btn-ow:hover{box-shadow:0 0 24px rgba(244,160,0,.5);transform:translateY(-1px)}
+.btn-ow:active{transform:translateY(0)}
+.btn-gh{background:rgba(255,255,255,.04);color:var(--tx2);border:1px solid rgba(255,255,255,.08);padding:9px 16px;font-size:12px;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)}
+.btn-gh:hover{color:var(--tx);border-color:rgba(255,255,255,.15)}
+.btn-rd{background:rgba(255,68,85,.1);color:var(--rd);border:1px solid rgba(255,68,85,.22);padding:9px 16px;font-size:12px;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)}
+
+/* ── INPUTS ── */
+.inp{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);color:var(--tx);font-family:'Barlow',sans-serif;font-size:14px;padding:11px 14px;width:100%;outline:none;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:border-color .2s;-webkit-appearance:none}
+.inp:focus{border-color:rgba(244,160,0,.5)}
+.inp::placeholder{color:var(--tx3)}
+select.inp{appearance:none}
+select.inp option{background:#0d1220}
+
+/* ── MODAL ── */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:400;padding:20px;animation:fi .2s ease}
+@keyframes fi{from{opacity:0}}
+.modal{background:var(--bg2);border:1px solid var(--bd);clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,20px 100%,0 calc(100% - 20px));padding:26px;width:100%;max-width:420px;box-shadow:0 0 50px rgba(244,160,0,.12);animation:su .3s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto}
+@keyframes su{from{transform:translateY(24px);opacity:0}}
+
+/* ── LEVEL UP ── */
+.lvbanner{background:linear-gradient(135deg,rgba(244,160,0,.15),rgba(255,107,0,.08));border:1px solid var(--or);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));padding:16px 20px;text-align:center;margin-bottom:14px;cursor:pointer;animation:gp 1.5s ease-in-out infinite}
+@keyframes gp{0%,100%{box-shadow:0 0 10px rgba(244,160,0,.2)}50%{box-shadow:0 0 30px rgba(244,160,0,.5)}}
+
+/* ── CARDS ── */
+.stat{flex:1;background:var(--panel);border:1px solid var(--bd2);clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));padding:11px 7px;text-align:center}
+.hcard{background:var(--panel);border:1px solid var(--bd2);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));padding:14px 16px;margin-bottom:8px}
+.rwcard{display:flex;align-items:center;gap:12px;padding:12px 15px;margin-bottom:7px;border:1px solid;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));transition:all .2s}
+.rwcard.locked{background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.05)}
+.rwcard.unlocked{background:rgba(244,160,0,.06);border-color:rgba(244,160,0,.3);animation:gp 2.5s ease-in-out infinite}
+.rwcard.claimed{background:rgba(0,212,170,.06);border-color:rgba(0,212,170,.22)}
+
+/* ── LABELS ── */
+.slbl{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:10px;color:var(--tx3);margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.slbl::before{content:'';width:10px;height:2px;background:var(--or);display:block}
+.snum{font-family:'Barlow Condensed',monospace;font-size:19px;font-weight:800}
+
+/* ── SETUP ── */
+.setup{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;gap:14px}
+.step-box{background:var(--panel);border:1px solid var(--bd2);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));padding:16px 20px;width:100%;max-width:500px}
+
+/* ── NAV ── */
+.snav-btn{display:flex;align-items:center;gap:10px;padding:11px 14px;background:none;border:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);cursor:pointer;transition:all .18s;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);width:100%;text-align:left;-webkit-tap-highlight-color:transparent}
+.snav-btn.on{color:#000;background:linear-gradient(135deg,#C47800,#F4A000)}
+.snav-btn:not(.on):hover{background:rgba(244,160,0,.07);color:var(--or)}
+.tab{flex:1;padding:11px 3px;background:none;border:none;border-bottom:2px solid transparent;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);cursor:pointer;transition:all .18s;position:relative;-webkit-tap-highlight-color:transparent}
+.tab.on{color:var(--or);border-bottom-color:var(--or)}
+
+/* ── SPINNERS ── */
+.spin{width:16px;height:16px;border:2px solid rgba(244,160,0,.2);border-top-color:var(--or);border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ping{width:6px;height:6px;border-radius:50%;background:var(--gr);animation:pa 2s ease-in-out infinite;display:inline-block;margin-right:5px}
+@keyframes pa{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,212,170,.5)}50%{opacity:.5;box-shadow:0 0 0 5px rgba(0,212,170,0)}}
+.pop{animation:pk .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pk{0%{transform:scale(1)}45%{transform:scale(1.04)}100%{transform:scale(1)}}
+
+/* ── DIVIDER ── */
+.div-line{display:flex;align-items:center;gap:10px;margin:14px 0 10px}
+.div-line::before{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(244,160,0,.22))}
+.div-line::after{content:'';flex:1;height:1px;background:linear-gradient(270deg,transparent,rgba(244,160,0,.22))}
+.div-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:2px;color:var(--tx3)}
+
+/* ── LAYOUT ── */
+#app{min-height:100vh}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:260px;flex-shrink:0;border-right:1px solid var(--bd2);padding:24px 16px;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--bg2)}
+.main{flex:1;padding:26px 28px;max-width:700px}
+.mob-nav{display:none}
+.mob-head{display:none}
+
+@media(max-width:767px){
+  .sidebar{display:none}
+  .mob-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--bd2);z-index:100;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .mob-head{display:block}
+  .main{padding:14px;padding-bottom:80px}
+}
+
+/* TAG */
+.tag{font-size:11px;padding:2px 8px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px}
+
+/* ERROR */
+.errbar{background:rgba(255,68,85,.1);border:1px solid rgba(255,68,85,.25);clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);padding:10px 14px;font-size:12px;color:var(--rd);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:rgba(255,255,255,.1);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:0;background:var(--or);clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);cursor:pointer}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════
+const TODAY = () => new Date().toISOString().slice(0, 10);
+const LS_URL_KEY = "questlog-sheets-url";
+const XPperLevel = lv => Math.floor(120 * Math.pow(lv, 1.55));
+function getLv(totalXP) {
+  let level = 1, acc = 0;
+  while (true) {
+    const need = XPperLevel(level);
+    if (acc + need > totalXP) return { level, cur: totalXP - acc, need, pct: ((totalXP - acc) / need) * 100 };
+    acc += need; level++;
+  }
+}
+const RANKS = ["신병","일반병","상병","하사","중사","대사","준위","소위","중위","대위","소령","중령","대령","준장","소장","중장","대장","원수","전설","불멸"];
+const getRank = lv => RANKS[Math.min(lv - 1, RANKS.length - 1)];
+const CAT = {
+  "마인드": { color:"#7B68EE", icon:"◈" },
+  "바디":   { color:"#00D4AA", icon:"◉" },
+  "성장":   { color:"#F4A000", icon:"◆" },
+  "커스텀": { color:"#FF6B9D", icon:"◇" },
+};
+const DEFAULT_QUESTS = [
+  {id:"q1",title:"명상 10분",category:"마인드",emoji:"🧘",xp:50,active:true},
+  {id:"q2",title:"운동 30분",category:"바디",emoji:"💪",xp:100,active:true},
+  {id:"q3",title:"독서 20페이지",category:"성장",emoji:"📚",xp:80,active:true},
+  {id:"q4",title:"물 2L 마시기",category:"바디",emoji:"💧",xp:30,active:true},
+  {id:"q5",title:"감사일기 3줄",category:"마인드",emoji:"🌿",xp:40,active:true},
+  {id:"q6",title:"학습 15분",category:"성장",emoji:"💻",xp:70,active:true},
+];
+const DEFAULT_REWARDS = [
+  {level:2,type:"title",value:"🌱 새싹 탐험가",claimed:false},
+  {level:3,type:"real",value:"좋아하는 카페 방문 ☕",claimed:false},
+  {level:4,type:"title",value:"⚡ 각성한 자",claimed:false},
+  {level:5,type:"real",value:"치킨 사먹기 🍗",claimed:false},
+  {level:6,type:"title",value:"🔥 불꽃 전사",claimed:false},
+  {level:7,type:"real",value:"원하는 물건 구매 🛍️",claimed:false},
+  {level:8,type:"title",value:"💎 다이아몬드 영혼",claimed:false},
+  {level:10,type:"real",value:"특별한 여행 계획 ✈️",claimed:false},
+  {level:12,type:"title",value:"🌟 전설의 존재",claimed:false},
+  {level:15,type:"real",value:"나만의 특별 보상 🏆",claimed:false},
+];
+
+// ═══════════════════════════════════════════
+//  JSONP API  (CORS 완전 우회)
+// ═══════════════════════════════════════════
+function jsonp(url, params) {
+  return new Promise((resolve, reject) => {
+    const cb = "jcb_" + Math.random().toString(36).slice(2);
+    const s  = document.createElement("script");
+    const t  = setTimeout(() => { cleanup(); reject(new Error("Timeout")); }, 15000);
+    function cleanup() { clearTimeout(t); delete window[cb]; s.parentNode && s.parentNode.removeChild(s); }
+    window[cb] = data => { cleanup(); resolve(data); };
+    s.src = url + "?" + new URLSearchParams({ ...params, callback: cb });
+    s.onerror = () => { cleanup(); reject(new Error("Network error")); };
+    document.head.appendChild(s);
+  });
+}
+function api(url, params) {
+  // Serialize objects/arrays to JSON strings
+  const p = {};
+  for (const [k, v] of Object.entries(params)) {
+    p[k] = (typeof v === "object" && v !== null) ? JSON.stringify(v) : String(v);
+  }
+  return jsonp(url, p);
+}
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let state = {
+  view: "setup",        // setup | app
+  tab:  "today",
+  sheetsUrl: localStorage.getItem(LS_URL_KEY) || "",
+  quests:    DEFAULT_QUESTS,
+  dailyLogs: {},
+  rewards:   DEFAULT_REWARDS,
+  profile:   { totalXP: 0 },
+  loading:   false,
+  syncing:   false,
+  syncErr:   "",
+  lvUp:      null,
+  modal:     null,      // null | addBonus | addQ | editQ | addR | editR
+  form:      {},
+  popId:     null,
+};
+
+function setState(patch) {
+  Object.assign(state, typeof patch === "function" ? patch(state) : patch);
+  render();
+}
+
+// ═══════════════════════════════════════════
+//  SHEETS HELPERS
+// ═══════════════════════════════════════════
+async function loadAll() {
+  setState({ loading: true, syncErr: "" });
+  try {
+    const data = await api(state.sheetsUrl, { action: "getAll" });
+    if (data.error) throw new Error(data.error);
+    setState({
+      quests:    data.quests    || DEFAULT_QUESTS,
+      dailyLogs: data.dailyLogs || {},
+      rewards:   data.rewards   || DEFAULT_REWARDS,
+      profile:   data.profile   || { totalXP: 0 },
+      view: "app", loading: false,
+    });
+    localStorage.setItem(LS_URL_KEY, state.sheetsUrl);
+  } catch(e) {
+    setState({ loading: false, syncErr: "연결 실패: " + e.message });
+  }
+}
+
+async function sh(params) {
+  setState({ syncing: true });
+  try {
+    await api(state.sheetsUrl, params);
+  } catch(e) {
+    setState({ syncErr: "저장 실패: " + e.message });
+  }
+  setState({ syncing: false });
+}
+
+// ═══════════════════════════════════════════
+//  ACTIONS
+// ═══════════════════════════════════════════
+function todayLog() {
+  return state.dailyLogs[TODAY()] || { completed: {}, bonusQuests: [] };
+}
+function setTodayLog(fn) {
+  const log  = todayLog();
+  const next = fn(log);
+  setState(s => ({ dailyLogs: { ...s.dailyLogs, [TODAY()]: next } }));
+}
+
+function toggleQuest(q) {
+  const done  = !!todayLog().completed?.[q.id];
+  const prevLv = getLv(state.profile.totalXP).level;
+  const newXP  = state.profile.totalXP + (done ? -q.xp : q.xp);
+  const newLv  = getLv(newXP).level;
+  setState(s => ({ profile: { ...s.profile, totalXP: newXP }, popId: done ? null : q.id }));
+  setTodayLog(log => {
+    const nc = { ...log.completed, [q.id]: !done };
+    if (done) delete nc[q.id];
+    return { ...log, completed: nc };
+  });
+  if (!done && newLv > prevLv) setState({ lvUp: { level: newLv } });
+  setTimeout(() => setState({ popId: null }), 500);
+  // Sync
+  sh(done
+    ? { action:"removeLog", date:TODAY(), questId:q.id, isBonus:"false" }
+    : { action:"logQuest",  date:TODAY(), questId:q.id, questTitle:q.title, xp:q.xp, isBonus:"false" }
+  );
+  sh({ action:"updateXP", totalXP: newXP });
+}
+
+function toggleBonus(idx) {
+  const b    = todayLog().bonusQuests[idx];
+  const done = b.done;
+  const newXP = state.profile.totalXP + (done ? -b.xp : b.xp);
+  const prevLv = getLv(state.profile.totalXP).level;
+  setState(s => ({ profile: { ...s.profile, totalXP: newXP } }));
+  setTodayLog(log => ({ ...log, bonusQuests: log.bonusQuests.map((bq,i)=>i===idx?{...bq,done:!bq.done}:bq) }));
+  if (!done && getLv(newXP).level > prevLv) setState({ lvUp: { level: getLv(newXP).level } });
+  const bid = `b${idx}-${b.title}`;
+  sh(done
+    ? { action:"removeLog", date:TODAY(), questId:bid, isBonus:"true" }
+    : { action:"logQuest",  date:TODAY(), questId:bid, questTitle:b.title, xp:b.xp, isBonus:"true" }
+  );
+  sh({ action:"updateXP", totalXP: newXP });
+}
+
+function saveQuests(newQ) {
+  setState({ quests: newQ });
+  sh({ action:"saveQuests", quests: newQ });
+}
+function saveRewards(newR) {
+  setState({ rewards: newR });
+  sh({ action:"saveRewards", rewards: newR });
+}
+function claimReward(idx) {
+  const r  = state.rewards[idx];
+  const newR = state.rewards.map((rr,i) => i===idx ? {...rr,claimed:true} : rr);
+  setState({ rewards: newR });
+  sh({ action:"claimReward", level: r.level });
+}
+
+// ═══════════════════════════════════════════
+//  HTML BUILDER HELPERS
+// ═══════════════════════════════════════════
+const h = (tag, attrs, ...children) => {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === "style" && typeof v === "object") Object.assign(el.style, v);
+    else el.setAttribute(k, v);
+  }
+  for (const c of children.flat()) {
+    if (c == null) continue;
+    el.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  }
+  return el;
+};
+const div  = (a, ...c) => h("div",  a, ...c);
+const span = (a, ...c) => h("span", a, ...c);
+const btn  = (a, ...c) => h("button", a, ...c);
+const inp  = (a)       => h("input",  a);
+
+// ═══════════════════════════════════════════
+//  SETUP SCREEN
+// ═══════════════════════════════════════════
+function renderSetup() {
+  const steps = [
+    { n:"01", title:"Google Sheets 생성", body:"sheets.new 에서 새 스프레드시트를 만드세요." },
+    { n:"02", title:"Apps Script 설정", body:"확장 프로그램 → Apps Script → Code.gs 전체 붙여넣기 → 저장\n⚔️ 퀘스트 시스템 메뉴 → 초기 시트 설정 실행" },
+    { n:"03", title:"웹 앱 배포", body:"배포 → 새 배포 → 유형: 웹 앱\n다음 사용자로 실행: 나 / 액세스: 모든 사용자 → 배포" },
+  ];
+
+  const urlInput = inp({ class:"inp", placeholder:"https://script.google.com/macros/s/.../exec", value: state.sheetsUrl, style:{ flex:"1" } });
+  urlInput.addEventListener("input", e => state.sheetsUrl = e.target.value);
+  urlInput.addEventListener("keydown", e => { if(e.key==="Enter") connect(); });
+
+  const connectBtn = btn({ class:"btn btn-ow", style:{flexShrink:"0"}, onclick: connect },
+    state.loading ? h("span",{class:"spin"}) : "연결"
+  );
+
+  async function connect() {
+    if (!state.sheetsUrl.trim()) return;
+    await loadAll();
+  }
+
+  return div({ class:"setup" },
+    div({ style:{textAlign:"center",marginBottom:8} },
+      div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"32px",letterSpacing:"4px",color:"var(--or)",textShadow:"0 0 30px rgba(244,160,0,.5)"} }, "QUEST LOG"),
+      div({ style:{fontSize:"12px",color:"var(--tx3)",letterSpacing:"2px",marginTop:"4px"} }, "DAILY MISSION SYSTEM — Google Sheets 연동")
+    ),
+    ...steps.map(s => div({ class:"step-box" },
+      div({ style:{display:"flex",gap:"12px",alignItems:"flex-start"} },
+        div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"26px",color:"var(--or)",lineHeight:"1",flexShrink:"0"} }, s.n),
+        div({},
+          div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"700",fontSize:"14px",letterSpacing:"1px",color:"var(--tx)",marginBottom:"5px"} }, s.title),
+          div({ style:{fontSize:"12px",color:"var(--tx2)",lineHeight:"1.7",whiteSpace:"pre-line"} }, s.body)
+        )
+      )
+    )),
+    div({ class:"step-box", style:{maxWidth:"500px"} },
+      div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"700",fontSize:"13px",letterSpacing:"1px",color:"var(--or)",marginBottom:"10px"} }, "04 — 웹 앱 URL 입력"),
+      div({ style:{display:"flex",gap:"8px"} }, urlInput, connectBtn),
+      state.syncErr ? div({ style:{marginTop:"10px",fontSize:"12px",color:"var(--rd)"} }, state.syncErr) : null
+    )
+  );
+}
+
+// ═══════════════════════════════════════════
+//  TODAY PANEL
+// ═══════════════════════════════════════════
+function renderToday() {
+  const log   = todayLog();
+  const lv    = getLv(state.profile.totalXP);
+  const actQ  = state.quests.filter(q=>q.active);
+  const donFx = actQ.filter(q=>log.completed?.[q.id]);
+  const donBn = (log.bonusQuests||[]).filter(b=>b.done);
+  const todXP = donFx.reduce((s,q)=>s+q.xp,0) + donBn.reduce((s,b)=>s+b.xp,0);
+  const totT  = actQ.length + (log.bonusQuests||[]).length;
+  const totD  = donFx.length + donBn.length;
+  const pct   = totT ? Math.round((totD/totT)*100) : 0;
+
+  const frag = document.createDocumentFragment();
+
+  // Level up banner
+  if (state.lvUp) {
+    const banner = div({ class:"lvbanner", onclick:()=>setState({lvUp:null}) },
+      div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontSize:"10px",letterSpacing:"3px",color:"var(--or)",marginBottom:"3px"} }, "MISSION COMPLETE"),
+      div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontSize:"26px",fontWeight:"800",color:"var(--or)",textShadow:"0 0 20px rgba(244,160,0,.8)"} }, `LEVEL UP → ${state.lvUp.level}`),
+      div({ style:{fontSize:"12px",color:"var(--tx2)",marginTop:"4px"} }, `${getRank(state.lvUp.level)} 진급 · 탭하여 닫기`)
+    );
+    frag.appendChild(banner);
+  }
+
+  // Stats
+  const stats = div({ style:{display:"flex",gap:"8px",marginBottom:"14px"} },
+    ...[
+      {l:"COMPLETED", v:`${totD}/${totT}`, c:"var(--bl)"},
+      {l:"TODAY XP",  v:`+${todXP}`,       c:"var(--or)"},
+      {l:"PROGRESS",  v:`${pct}%`,          c:pct===100?"var(--gr)":"var(--tx2)"},
+    ].map(s => div({ class:"stat" },
+      div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontSize:"9px",letterSpacing:"2px",color:"var(--tx3)",marginBottom:"4px"} }, s.l),
+      div({ class:"snum", style:{color:s.c} }, s.v)
+    ))
+  );
+  frag.appendChild(stats);
+
+  // Progress bar
+  const pbar = div({ style:{marginBottom:"16px"} },
+    div({ style:{height:"4px",background:"rgba(255,255,255,.05)",borderRadius:"1px",overflow:"hidden"} },
+      div({ style:{height:"100%",width:`${pct}%`,background:pct===100?"linear-gradient(90deg,#00D4AA,#00FF88)":"linear-gradient(90deg,#FF6B00,#F4A000)",transition:"width .7s ease",boxShadow:`0 0 8px ${pct===100?"rgba(0,212,170,.6)":"rgba(244,160,0,.5)"}`} })
+    )
+  );
+  frag.appendChild(pbar);
+
+  // Fixed quests label
+  frag.appendChild(div({ class:"slbl" }, "고정 미션"));
+
+  // Quest rows
+  actQ.forEach(q => {
+    const done = !!log.completed?.[q.id];
+    const cat  = CAT[q.category] || CAT["커스텀"];
+    const row  = div({ class:`qrow${done?" done":""}${state.popId===q.id?" pop":""}`, onclick:()=>toggleQuest(q) },
+      div({ class:"qi" },
+        div({ class:`chk${done?" on":""}` }, done?"✓":""),
+        div({ style:{width:"3px",height:"26px",background:cat.color,borderRadius:"1px",flexShrink:"0",opacity:done?"0.3":"1"} }),
+        div({ style:{flex:"1",minWidth:"0"} },
+          div({ class:"qt", style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"600",fontSize:"15px",color:done?"var(--tx3)":"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"} }, `${q.emoji} ${q.title}`),
+          div({ style:{fontSize:"10px",color:cat.color,opacity:done?"0.4":"0.8",marginTop:"1px"} }, `${cat.icon} ${q.category}`)
+        ),
+        div({ style:{textAlign:"right",flexShrink:"0"} },
+          div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"15px",color:done?"var(--tx3)":"var(--or)"} }, `+${q.xp}`),
+          div({ style:{fontSize:"9px",letterSpacing:"1px",color:"var(--tx3)"} }, "XP")
+        )
+      )
+    );
+    frag.appendChild(row);
+  });
+
+  // Bonus quests
+  const bonuses = log.bonusQuests || [];
+  if (bonuses.length > 0) {
+    frag.appendChild(div({ class:"div-line" }, span({ class:"div-label" }, "추가 미션")));
+    bonuses.forEach((b, i) => {
+      const row = div({ class:`qrow${b.done?" done":""}`, onclick:()=>toggleBonus(i) },
+        div({ class:"qi" },
+          div({ class:`chk${b.done?" on":""}` }, b.done?"✓":""),
+          div({ style:{width:"3px",height:"26px",background:"#FF6B9D",borderRadius:"1px",flexShrink:"0",opacity:b.done?"0.3":"1"} }),
+          div({ style:{flex:"1"} },
+            div({ class:"qt", style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"600",fontSize:"15px",color:b.done?"var(--tx3)":"var(--tx)"} }, `⚡ ${b.title}`),
+            div({ style:{fontSize:"10px",color:"#FF6B9D",opacity:b.done?"0.4":"0.8",marginTop:"1px"} }, "◇ 커스텀")
+          ),
+          div({ style:{textAlign:"right",flexShrink:"0"} },
+            div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"15px",color:b.done?"var(--tx3)":"var(--or)"} }, `+${b.xp}`),
+            div({ style:{fontSize:"9px",letterSpacing:"1px",color:"var(--tx3)"} }, "XP")
+          )
+        )
+      );
+      frag.appendChild(row);
+    });
+  }
+
+  // Add bonus button
+  frag.appendChild(btn({ class:"btn btn-gh", style:{width:"100%",marginTop:"11px"}, onclick:()=>setState({modal:"addBonus",form:{title:"",xp:50}}) }, "+ ADD BONUS MISSION"));
+
+  return frag;
+}
+
+// ═══════════════════════════════════════════
+//  HISTORY PANEL
+// ═══════════════════════════════════════════
+function renderHistory() {
+  const frag = document.createDocumentFragment();
+  frag.appendChild(div({ class:"slbl" }, "전투 기록"));
+  const dates = Object.keys(state.dailyLogs).sort((a,b)=>b.localeCompare(a));
+  if (!dates.length) {
+    frag.appendChild(div({ style:{textAlign:"center",color:"var(--tx3)",padding:"40px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:"14px",letterSpacing:"2px"} }, "NO RECORDS FOUND"));
+    return frag;
+  }
+  const today = TODAY();
+  const actQ  = state.quests.filter(q=>q.active);
+  dates.forEach(date => {
+    const log = state.dailyLogs[date];
+    const df  = actQ.filter(q=>log.completed?.[q.id]);
+    const db2 = (log.bonusQuests||[]).filter(b=>b.done);
+    const tot = actQ.length + (log.bonusQuests||[]).length;
+    const don = df.length + db2.length;
+    const xpE = df.reduce((s,q)=>s+q.xp,0) + db2.reduce((s,b)=>s+b.xp,0);
+    const p2  = tot ? Math.round((don/tot)*100) : 0;
+    const isTd = date === today;
+    const dtStr = new Date(date+"T12:00:00").toLocaleDateString("ko-KR",{month:"long",day:"numeric",weekday:"short"});
+
+    const tags = [
+      ...df.map(q  => span({ class:"tag", style:{background:"rgba(244,160,0,.08)",color:"var(--or)",border:"1px solid rgba(244,160,0,.15)",marginRight:"4px",marginTop:"4px",display:"inline-block"} }, `${q.emoji} ${q.title}`)),
+      ...db2.map(b => span({ class:"tag", style:{background:"rgba(255,107,157,.08)",color:"#FF6B9D",border:"1px solid rgba(255,107,157,.15)",marginRight:"4px",marginTop:"4px",display:"inline-block"} }, `⚡ ${b.title}`)),
+    ];
+
+    frag.appendChild(div({ class:"hcard" },
+      div({ style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"} },
+        div({},
+          div({ style:{display:"flex",alignItems:"center",gap:"7px",flexWrap:"wrap",marginBottom:"2px"} },
+            span({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"700",fontSize:"14px",color:"var(--tx)"} }, dtStr),
+            isTd ? span({ style:{fontSize:"9px",background:"rgba(244,160,0,.12)",color:"var(--or)",border:"1px solid rgba(244,160,0,.28)",padding:"1px 5px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px"} }, "TODAY") : null,
+            p2===100 ? span({ style:{fontSize:"9px",background:"rgba(0,212,170,.12)",color:"var(--gr)",border:"1px solid rgba(0,212,170,.28)",padding:"1px 5px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px"} }, "PERFECT") : null,
+          ),
+          div({ style:{fontSize:"11px",color:"var(--tx3)"} }, `${don}/${tot} missions`)
+        ),
+        div({ style:{textAlign:"right"} },
+          div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"15px",color:"var(--or)"} }, `+${xpE} XP`),
+          div({ style:{fontSize:"10px",color:p2===100?"var(--gr)":"var(--tx3)",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"700"} }, `${p2}%`)
+        )
+      ),
+      div({ style:{height:"3px",background:"rgba(255,255,255,.04)",borderRadius:"1px",overflow:"hidden",marginBottom:"8px"} },
+        div({ style:{height:"100%",width:`${p2}%`,background:p2===100?"linear-gradient(90deg,#00D4AA,#00FF88)":"linear-gradient(90deg,#FF6B00,#F4A000)",transition:"width .5s"} })
+      ),
+      div({}, ...tags)
+    ));
+  });
+  return frag;
+}
+
+// ═══════════════════════════════════════════
+//  QUESTS PANEL
+// ═══════════════════════════════════════════
+function renderQuests() {
+  const frag = document.createDocumentFragment();
+  frag.appendChild(div({ style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"} },
+    div({ class:"slbl", style:{marginBottom:"0"} }, "미션 관리"),
+    btn({ class:"btn btn-ow", style:{padding:"7px 14px",fontSize:"11px"}, onclick:()=>setState({modal:"addQ",form:{title:"",category:"마인드",emoji:"⭐",xp:50}}) }, "+ 미션 추가")
+  ));
+  state.quests.forEach((q, idx) => {
+    const cat = CAT[q.category] || CAT["커스텀"];
+    frag.appendChild(div({ style:{display:"flex",alignItems:"center",gap:"10px",padding:"11px 14px",background:"var(--panel)",border:`1px solid ${q.active?"var(--bd2)":"rgba(255,255,255,.02)"}`,clipPath:"polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))",marginBottom:"6px",opacity:q.active?"1":"0.4"} },
+      div({ style:{width:"3px",height:"30px",background:cat.color,borderRadius:"1px",flexShrink:"0"} }),
+      div({ style:{fontSize:"17px"} }, q.emoji),
+      div({ style:{flex:"1",minWidth:"0"} },
+        div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"600",fontSize:"14px",color:"var(--tx)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"} }, q.title),
+        div({ style:{fontSize:"11px",display:"flex",gap:"6px",marginTop:"2px"} },
+          span({ style:{color:cat.color} }, `${cat.icon} ${q.category}`),
+          span({ style:{color:"var(--or)"} }, `${q.xp} XP`)
+        )
+      ),
+      div({ style:{display:"flex",gap:"5px",flexShrink:"0"} },
+        btn({ class:"btn btn-gh", style:{padding:"4px 10px",fontSize:"11px"}, onclick:()=>setState({modal:"editQ",form:{...q,idx}}) }, "편집"),
+        btn({ class:"btn btn-gh", style:{padding:"4px 10px",fontSize:"11px",color:q.active?"var(--rd)":"var(--gr)"}, onclick:()=>saveQuests(state.quests.map((qq,i)=>i===idx?{...qq,active:!qq.active}:qq)) }, q.active?"OFF":"ON")
+      )
+    ));
+  });
+  return frag;
+}
+
+// ═══════════════════════════════════════════
+//  REWARDS PANEL
+// ═══════════════════════════════════════════
+function renderRewards() {
+  const lv   = getLv(state.profile.totalXP);
+  const frag = document.createDocumentFragment();
+  frag.appendChild(div({ style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"} },
+    div({ class:"slbl", style:{marginBottom:"0"} }, "레벨 보상"),
+    btn({ class:"btn btn-ow", style:{padding:"7px 14px",fontSize:"11px"}, onclick:()=>setState({modal:"addR",form:{level:lv.level+1,type:"real",value:""}}) }, "+ 보상 추가")
+  ));
+  // Profile summary
+  frag.appendChild(div({ style:{background:"var(--panel)",border:"1px solid var(--bd2)",clipPath:"polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))",padding:"13px 15px",marginBottom:"14px"} },
+    div({ style:{display:"flex",justifyContent:"space-between",marginBottom:"5px"} },
+      span({ style:{fontSize:"12px",color:"var(--tx2)"} }, "현재 레벨"),
+      span({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"13px",color:"var(--or)"} }, `LV.${lv.level} — ${getRank(lv.level)}`)
+    ),
+    div({ style:{display:"flex",justifyContent:"space-between"} },
+      span({ style:{fontSize:"12px",color:"var(--tx2)"} }, "누적 XP"),
+      span({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"13px",color:"var(--tx)"} }, state.profile.totalXP.toLocaleString())
+    )
+  ));
+  // Reward cards
+  [...state.rewards].sort((a,b)=>a.level-b.level).forEach((r, si) => {
+    const oi  = state.rewards.indexOf(r);
+    const isU = lv.level >= r.level;
+    const cls = r.claimed ? "claimed" : isU ? "unlocked" : "locked";
+    frag.appendChild(div({ class:`rwcard ${cls}` },
+      div({ class:"hex", style:{width:"38px",height:"38px",background:r.claimed?"rgba(0,212,170,.14)":isU?"rgba(244,160,0,.14)":"rgba(255,255,255,.04)",fontSize:"17px",flexShrink:"0"} },
+        r.claimed ? "✅" : isU ? "🎁" : "🔒"
+      ),
+      div({ style:{flex:"1",minWidth:"0"} },
+        div({ style:{display:"flex",gap:"6px",marginBottom:"3px",alignItems:"center",flexWrap:"wrap"} },
+          span({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"12px",color:isU?"var(--or)":"var(--tx3)"} }, `LV.${r.level}`),
+          span({ style:{fontSize:"9px",letterSpacing:"1px",padding:"1px 5px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"700",color:r.type==="title"?"#7B68EE":"var(--or)",background:r.type==="title"?"rgba(123,104,238,.1)":"rgba(244,160,0,.1)",border:`1px solid ${r.type==="title"?"rgba(123,104,238,.22)":"rgba(244,160,0,.2)"}`} }, r.type==="title"?"TITLE":"REAL")
+        ),
+        div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontSize:"13px",fontWeight:r.claimed?"400":"600",color:r.claimed?"var(--gr)":isU?"var(--tx)":"var(--tx3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"} }, r.value)
+      ),
+      div({ style:{display:"flex",flexDirection:"column",gap:"4px",flexShrink:"0"} },
+        isU&&!r.claimed ? btn({ class:"btn btn-ow", style:{padding:"4px 10px",fontSize:"11px"}, onclick:()=>claimReward(oi) }, "수령") : null,
+        btn({ class:"btn btn-gh", style:{padding:"4px 10px",fontSize:"11px"}, onclick:()=>setState({modal:"editR",form:{...r,idx:oi}}) }, "편집")
+      )
+    ));
+  });
+  // Disconnect
+  frag.appendChild(btn({ class:"btn btn-rd", style:{width:"100%",marginTop:"14px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1.5px",fontSize:"12px"},
+    onclick:()=>{ if(confirm("연동 해제 후 초기화면으로 이동합니다.")) { localStorage.removeItem(LS_URL_KEY); setState({view:"setup",sheetsUrl:"",syncErr:""}); } }
+  }, "DISCONNECT SHEETS"));
+  return frag;
+}
+
+// ═══════════════════════════════════════════
+//  MODALS
+// ═══════════════════════════════════════════
+function renderModal() {
+  const { modal, form } = state;
+  if (!modal) return null;
+
+  function close() { setState({ modal: null, form: {} }); }
+
+  let title, body, actions;
+
+  if (modal === "addBonus") {
+    const ti = inp({ class:"inp", placeholder:"미션 내용", value:form.title||"" });
+    ti.addEventListener("input", e => state.form.title = e.target.value);
+    const xpLbl = span({ style:{color:"var(--or)",fontFamily:"'Barlow Condensed',sans-serif"} }, form.xp||50);
+    const xpIn  = inp({ type:"range", min:"10", max:"200", step:"10", value:form.xp||50 });
+    xpIn.addEventListener("input", e => { state.form.xp = Number(e.target.value); xpLbl.textContent = e.target.value; });
+    title = "+ BONUS MISSION";
+    body  = [ti, div({ style:{marginTop:"8px"} },
+      div({ style:{fontSize:"11px",color:"var(--tx3)",marginBottom:"5px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px"} }, "XP REWARD: ", xpLbl),
+      xpIn
+    )];
+    actions = [
+      btn({ class:"btn btn-ow", style:{flex:"1"}, onclick:()=>{
+        if (!state.form.title?.trim()) return;
+        const log = todayLog();
+        setTodayLog(l=>({...l,bonusQuests:[...(l.bonusQuests||[]),{title:state.form.title,xp:state.form.xp||50,done:false}]}));
+        close();
+      }}, "추가"),
+      btn({ class:"btn btn-gh", onclick:close }, "취소")
+    ];
+  }
+
+  else if (modal === "addQ" || modal === "editQ") {
+    const emoIn = inp({ class:"inp", style:{width:"52px",flex:"none",textAlign:"center"}, placeholder:"🌟", value:form.emoji||"" });
+    emoIn.addEventListener("input", e => state.form.emoji = e.target.value);
+    const tiIn  = inp({ class:"inp", placeholder:"미션 이름", value:form.title||"" });
+    tiIn.addEventListener("input", e => state.form.title = e.target.value);
+    const catSel = h("select", { class:"inp", value:form.category||"마인드" },
+      ...["마인드","바디","성장","커스텀"].map(c => { const o = h("option",{},c); if(c===form.category) o.selected=true; return o; })
+    );
+    catSel.addEventListener("change", e => state.form.category = e.target.value);
+    const xpLbl = span({ style:{color:"var(--or)",fontFamily:"'Barlow Condensed',sans-serif"} }, form.xp||50);
+    const xpIn  = inp({ type:"range", min:"10", max:"300", step:"10", value:form.xp||50 });
+    xpIn.addEventListener("input", e => { state.form.xp = Number(e.target.value); xpLbl.textContent = e.target.value; });
+    title = modal==="addQ" ? "+ ADD MISSION" : "EDIT MISSION";
+    body  = [
+      div({ style:{display:"flex",gap:"8px"} }, emoIn, tiIn),
+      catSel,
+      div({ style:{marginTop:"4px"} },
+        div({ style:{fontSize:"11px",color:"var(--tx3)",marginBottom:"5px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px"} }, "XP REWARD: ", xpLbl),
+        xpIn
+      )
+    ];
+    actions = [
+      btn({ class:"btn btn-ow", style:{flex:"1"}, onclick:()=>{
+        if (!state.form.title?.trim()) return;
+        const nq = modal==="addQ"
+          ? [...state.quests, {id:`q${Date.now()}`,title:state.form.title,category:state.form.category||"마인드",emoji:state.form.emoji||"⭐",xp:state.form.xp||50,active:true}]
+          : state.quests.map((q,i)=>i===form.idx?{...q,title:state.form.title,category:state.form.category||q.category,emoji:state.form.emoji||q.emoji,xp:state.form.xp||q.xp}:q);
+        saveQuests(nq); close();
+      }}, "저장"),
+      modal==="editQ" ? btn({ class:"btn btn-rd", onclick:()=>{ saveQuests(state.quests.filter((_,i)=>i!==form.idx)); close(); } }, "삭제") : null,
+      btn({ class:"btn btn-gh", onclick:close }, "취소")
+    ];
+  }
+
+  else if (modal === "addR" || modal === "editR") {
+    const lvLbl = span({ style:{color:"var(--or)",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800"} }, `LV.${form.level||1}`);
+    const lvIn  = inp({ type:"range", min:"1", max:"50", value:form.level||1 });
+    lvIn.addEventListener("input", e => { state.form.level = Number(e.target.value); lvLbl.textContent = `LV.${e.target.value}`; });
+    const typSel = h("select", { class:"inp" },
+      ...[["real","현실 보상 (Real Reward)"],["title","앱 내 칭호 (Title)"]].map(([v,l]) => {
+        const o = h("option",{value:v},l); if(v===form.type) o.selected=true; return o;
+      })
+    );
+    typSel.addEventListener("change", e => state.form.type = e.target.value);
+    const valIn = inp({ class:"inp", placeholder: form.type==="title"?"예: 🔥 불꽃 전사":"예: 치킨 사먹기 🍗", value:form.value||"" });
+    valIn.addEventListener("input", e => state.form.value = e.target.value);
+    title = modal==="addR" ? "+ ADD REWARD" : "EDIT REWARD";
+    body  = [
+      div({},
+        div({ style:{fontSize:"11px",color:"var(--tx3)",marginBottom:"5px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px"} }, "TARGET LEVEL: ", lvLbl),
+        lvIn
+      ),
+      typSel, valIn
+    ];
+    actions = [
+      btn({ class:"btn btn-ow", style:{flex:"1"}, onclick:()=>{
+        if (!state.form.value?.trim()) return;
+        const nr = modal==="addR"
+          ? [...state.rewards, {level:state.form.level||1,type:state.form.type||"real",value:state.form.value,claimed:false}]
+          : state.rewards.map((r,i)=>i===form.idx?{...r,level:state.form.level||r.level,type:state.form.type||r.type,value:state.form.value}:r);
+        saveRewards(nr); close();
+      }}, "저장"),
+      modal==="editR" ? btn({ class:"btn btn-rd", onclick:()=>{ saveRewards(state.rewards.filter((_,i)=>i!==form.idx)); close(); } }, "삭제") : null,
+      btn({ class:"btn btn-gh", onclick:close }, "취소")
+    ];
+  }
+
+  const overlay = div({ class:"mbg", onclick: e => { if(e.target===overlay) close(); } },
+    div({ class:"modal" },
+      div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"15px",letterSpacing:"2px",color:"var(--or)",marginBottom:"16px"} }, title),
+      div({ style:{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"16px"} }, ...body.map(b=>b||div({}))),
+      div({ style:{display:"flex",gap:"8px"} }, ...actions.filter(Boolean))
+    )
+  );
+  return overlay;
+}
+
+// ═══════════════════════════════════════════
+//  SIDEBAR / PLAYER CARD
+// ═══════════════════════════════════════════
+function renderSidebar(lv, unclRw) {
+  const NAV = [["today","⚔️","오늘"],["history","📅","기록"],["quests","⚙️","미션"],["rewards","🏆","보상"]];
+  return div({ class:"sidebar" },
+    div({ style:{marginBottom:"4px"} },
+      div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"20px",letterSpacing:"4px",color:"var(--or)",textShadow:"0 0 20px rgba(244,160,0,.4)"} }, "QUEST LOG"),
+      div({ style:{fontSize:"10px",color:"var(--tx3)",letterSpacing:"1.5px",marginTop:"2px",display:"flex",alignItems:"center"} },
+        span({ class:"ping" }), state.syncing?"SYNCING...":"SHEETS CONNECTED"
+      )
+    ),
+    div({ style:{marginTop:"18px",background:"rgba(244,160,0,.05)",border:"1px solid var(--bd2)",clipPath:"polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px))",padding:"14px"} },
+      div({ style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"11px"} },
+        div({ class:"hex", style:{width:"46px",height:"46px",background:"linear-gradient(135deg,#C47800,#F4A000)",fontSize:"20px",color:"#000",flexShrink:"0"} }, "⚔"),
+        div({ style:{flex:"1"} },
+          div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"19px",color:"var(--or)"} }, `LV.${lv.level}`),
+          div({ style:{fontSize:"11px",color:"var(--tx2)",letterSpacing:".5px"} }, getRank(lv.level))
+        ),
+        unclRw.length>0 ? div({ style:{fontSize:"10px",color:"var(--or)",background:"rgba(244,160,0,.1)",border:"1px solid rgba(244,160,0,.28)",padding:"3px 7px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px",animation:"gp 1.5s infinite"} }, `🎁 ${unclRw.length}`) : null
+      ),
+      div({ style:{display:"flex",justifyContent:"space-between",marginBottom:"4px"} },
+        span({ style:{fontSize:"10px",color:"var(--tx3)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px"} }, "EXP"),
+        span({ style:{fontSize:"10px",color:"var(--or)",fontFamily:"'Barlow Condensed',sans-serif"} }, `${lv.cur.toLocaleString()} / ${lv.need.toLocaleString()}`)
+      ),
+      div({ style:{height:"6px",background:"rgba(255,255,255,.05)",borderRadius:"1px",overflow:"hidden"} },
+        div({ class:"xpfill", style:{width:`${lv.pct}%`} })
+      )
+    ),
+    div({ style:{display:"flex",flexDirection:"column",gap:"3px",marginTop:"20px"} },
+      ...NAV.map(([k,ic,l]) => btn({ class:`snav-btn${state.tab===k?" on":""}`, onclick:()=>setState({tab:k}) }, span({},ic), l))
+    )
+  );
+}
+
+// ═══════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════
+function render() {
+  const root = document.getElementById("app");
+  root.innerHTML = "";
+
+  if (state.view === "setup" || state.loading) {
+    if (state.loading) {
+      root.appendChild(div({ style:{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"16px"} },
+        div({ class:"spin", style:{width:"36px",height:"36px",borderWidth:"3px"} }),
+        div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontSize:"13px",letterSpacing:"3px",color:"var(--or)"} }, "CONNECTING...")
+      ));
+    } else {
+      root.appendChild(renderSetup());
+    }
+    return;
+  }
+
+  const lv    = getLv(state.profile.totalXP);
+  const unclRw = state.rewards.filter(r=>!r.claimed && lv.level>=r.level);
+  const NAV   = [["today","⚔️","오늘"],["history","📅","기록"],["quests","⚙️","미션"],["rewards","🏆","보상"]];
+
+  const layout = div({ class:"layout" });
+
+  // SIDEBAR
+  layout.appendChild(renderSidebar(lv, unclRw));
+
+  // MAIN
+  const main = div({ class:"main" });
+
+  // Mobile header
+  const mhd = div({ class:"mob-head", style:{marginBottom:"14px"} },
+    div({ style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"} },
+      div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"18px",letterSpacing:"3px",color:"var(--or)"} }, "QUEST LOG"),
+      div({ style:{display:"flex",alignItems:"center",gap:"8px"} },
+        unclRw.length>0 ? div({ style:{fontSize:"10px",color:"var(--or)",animation:"gp 1.5s infinite"} }, `🎁${unclRw.length}`) : null,
+        div({ style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"17px",color:"var(--or)"} }, `LV.${lv.level}`)
+      )
+    ),
+    div({ style:{height:"5px",background:"rgba(255,255,255,.05)",borderRadius:"1px",overflow:"hidden"} },
+      div({ class:"xpfill", style:{width:`${lv.pct}%`} })
+    ),
+    div({ style:{display:"flex",justifyContent:"space-between",marginTop:"3px"} },
+      span({ style:{fontSize:"9px",color:"var(--tx3)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px"} }, getRank(lv.level)),
+      span({ style:{fontSize:"9px",color:"var(--tx3)",fontFamily:"'Barlow Condensed',sans-serif"} }, `${lv.cur}/${lv.need} XP`)
+    )
+  );
+  main.appendChild(mhd);
+
+  // Sync error
+  if (state.syncErr) {
+    main.appendChild(div({ class:"errbar" },
+      span({}, state.syncErr),
+      btn({ style:{background:"none",border:"none",color:"var(--rd)",cursor:"pointer",fontSize:"16px"}, onclick:()=>setState({syncErr:""}) }, "✕")
+    ));
+  }
+
+  // Panel content
+  const panelFrag = {
+    today:   renderToday,
+    history: renderHistory,
+    quests:  renderQuests,
+    rewards: renderRewards,
+  }[state.tab]();
+  main.appendChild(panelFrag instanceof DocumentFragment || panelFrag instanceof HTMLElement ? panelFrag : div({}, panelFrag));
+
+  layout.appendChild(main);
+  root.appendChild(layout);
+
+  // Mobile bottom nav
+  root.appendChild(div({ class:"mob-nav" },
+    ...NAV.map(([k,ic,l]) => btn({ class:`tab${state.tab===k?" on":""}`, onclick:()=>setState({tab:k}) },
+      div({ style:{fontSize:"17px",marginBottom:"1px"} }, ic),
+      div({}, l)
+    ))
+  ));
+
+  // Modal
+  const m = renderModal();
+  if (m) root.appendChild(m);
+}
+
+// ═══════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════
+if (state.sheetsUrl) {
+  loadAll();
+} else {
+  render();
+}
+</script>
+</body>
+</html>
