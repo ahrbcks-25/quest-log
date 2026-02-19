@@ -193,17 +193,19 @@ const XPL=lv=>{
 function getLv(xp){let lv=1,acc=0;while(true){const n=XPL(lv);if(acc+n>xp)return{level:lv,cur:xp-acc,need:n,pct:((xp-acc)/n)*100};acc+=n;lv++;}}
 const CAT={"마인드":{color:"#7B68EE"},"바디":{color:"#00B894"},"성장":{color:"#F4A000"},"커스텀":{color:"#E84460"}};
 // 기본 퀘스트 XP 설계:
-// - 쉬움(5~10분, 습관성): 40~60 XP
+// - 쉬움(5~10분, 습관성): 35~50 XP
 // - 보통(15~30분, 노력필요): 80~120 XP
-// - 어려움(집중력/지속성): 150~200 XP
-// 데일리 풀 완료 시 총 ~590 XP → Lv1 하루 완료 = 약 3일에 레벨업
+// - 어려움(집중력/지속성): 130~160 XP
+// 데일리 풀 완료 시 총 ~730 XP
 const DQ=[
-  {id:"q1",title:"명상 10분",    category:"마인드",emoji:"🧘",xp:45, active:true},
-  {id:"q2",title:"운동 30분",    category:"바디",  emoji:"💪",xp:120,active:true},
-  {id:"q3",title:"독서 20페이지",category:"성장",  emoji:"📚",xp:100,active:true},
-  {id:"q4",title:"물 2L 마시기", category:"바디",  emoji:"💧",xp:35, active:true},
-  {id:"q5",title:"감사일기 3줄", category:"마인드",emoji:"🌿",xp:50, active:true},
-  {id:"q6",title:"학습 15분",    category:"성장",  emoji:"💻",xp:80, active:true},
+  {id:"q1",title:"스트레칭 10분",       category:"바디",  emoji:"🤸",xp:45, active:true},
+  {id:"q2",title:"운동 30분",            category:"바디",  emoji:"💪",xp:120,active:true},
+  {id:"q3",title:"독서 20페이지",        category:"성장",  emoji:"📚",xp:100,active:true},
+  {id:"q4",title:"물 2L 마시기",         category:"바디",  emoji:"💧",xp:35, active:true},
+  {id:"q5",title:"저널링 10분",          category:"마인드",emoji:"📓",xp:55, active:true},
+  {id:"q6",title:"게임 기획 공부",       category:"성장",  emoji:"🎮",xp:130,active:true},
+  {id:"q7",title:"취업 준비 활동",       category:"성장",  emoji:"💼",xp:140,active:true},
+  {id:"q8",title:"포트폴리오 고도화",    category:"성장",  emoji:"🗂️",xp:160,active:true},
 ];
 // 보상 설계 철학:
 // - 초반(1~5): 2레벨마다 칭호 → 빠른 성취감
