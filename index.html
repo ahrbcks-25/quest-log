@@ -10,7 +10,7 @@
 
 <script>
 (function(){
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FF8C00"/><stop offset="100%" stop-color="#FFD700"/></linearGradient></defs><rect width="512" height="512" rx="115" fill="url(#bg)"/><rect x="120" y="148" width="272" height="44" rx="22" fill="rgba(255,255,255,0.9)"/><rect x="120" y="234" width="200" height="44" rx="22" fill="rgba(255,255,255,0.7)"/><rect x="120" y="320" width="232" height="44" rx="22" fill="rgba(255,255,255,0.7)"/><circle cx="96" cy="170" r="22" fill="white"/><circle cx="96" cy="256" r="22" fill="rgba(255,255,255,0.5)"/><circle cx="96" cy="342" r="22" fill="rgba(255,255,255,0.5)"/><polyline points="84,170 93,180 112,158" stroke="#FF8C00" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FF8C00"/><stop offset="100%" stop-color="#FFD700"/></linearGradient></defs><rect width="512" height="512" rx="115" fill="url(#bg)"/><polyline points="140,256 220,336 372,176" stroke="white" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
   const enc='data:image/svg+xml,'+encodeURIComponent(svg);
   const m={name:"Quest Log",short_name:"Quest",start_url:"./",display:"standalone",background_color:"#0a0e1a",theme_color:"#F4A000",icons:[{src:enc,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
   const link=document.createElement("link");link.rel="manifest";link.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:"application/json"}));document.head.appendChild(link);
@@ -158,13 +158,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
 /* ── LAYOUT ── */
 #app{min-height:100vh}
-.layout{display:grid;grid-template-columns:200px 1fr 460px;grid-template-rows:100vh;min-height:100vh}
+.layout{display:grid;grid-template-columns:180px 360px 1fr;grid-template-rows:100vh;min-height:100vh}
 .sl{background:var(--bg2);border-right:1px solid var(--bd2);padding:22px 14px;overflow-y:auto;display:flex;flex-direction:column;transition:background .3s}
 .mc{overflow-y:auto;padding:28px 30px;background:var(--bg);transition:background .3s}
 .sr{background:var(--bg2);border-left:1px solid var(--bd2);padding:22px 18px;overflow-y:auto;transition:background .3s}
 .mob-nav{display:none}
 .mob-head{display:none}
-@media(max-width:1300px){.layout{grid-template-columns:190px 1fr 380px}}@media(max-width:1000px){.layout{grid-template-columns:190px 1fr 300px}}@media(max-width:860px){.layout{grid-template-columns:190px 1fr}.sr{display:none}}
+@media(max-width:1100px){.layout{grid-template-columns:170px 340px 1fr}}@media(max-width:860px){.layout{grid-template-columns:160px 1fr}.sr{display:none}}
 @media(max-width:767px){
   .layout{display:block}
   .sl,.sr{display:none}
@@ -364,7 +364,7 @@ function el(tag,a,...c){
     else if(k==="style"&&typeof v==="object")Object.assign(e.style,v);
     else e.setAttribute(k,v);
   }
-  c.flat().forEach(c=>{if(c==null)return;e.appendChild(typeof c==="string"?document.createTextNode(c):c);});
+  c.flat().forEach(c=>{if(c==null)return;e.appendChild((typeof c==="string"||typeof c==="number")?document.createTextNode(String(c)):c);});
   return e;
 }
 const d=(a,...c)=>el("div",a,...c);
@@ -656,64 +656,160 @@ function renderRewards(){
   return f;
 }
 
-/* ── RIGHT SIDEBAR ── */
-function renderRight(){
+/* ── CHARTS PANEL ── */
+function renderChartsPanel(){
   const lv=getLv(S.profile.totalXP);
   const log=tlog(),aQ=S.quests.filter(q=>q.active);
   const f=document.createDocumentFragment();
 
-  // Week chart
-  f.appendChild(d({class:"slbl"},"주간 활동"));
-  f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"16px 14px"}},weekChart()));
-
-  // Category donut + bars
-  f.appendChild(d({class:"slbl"},"카테고리 현황"));
+  // LEVEL GAUGE
+  f.appendChild(d({class:"slbl"},"레벨 진행도"));
+  const nxtR=S.rewards.filter(r=>!r.claimed&&r.level>lv.level).sort((a,b)=>a.level-b.level)[0];
   f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"16px"}},
-    d({style:{display:"flex",gap:"14px",alignItems:"center"}},
-      catDonut(),
-      d({style:{flex:"1",display:"flex",flexDirection:"column",gap:"9px"}},
-        ...Object.entries(CAT).map(([nm,{color}])=>{
-          const qs=aQ.filter(q=>q.category===nm);if(!qs.length)return null;
-          const dn=qs.filter(q=>log.completed?.[q.id]).length,p2=Math.round((dn/qs.length)*100);
-          return d({},
-            d({style:{display:"flex",justifyContent:"space-between",marginBottom:"3px"}},
-              el("span",{style:{fontSize:"10px",color:"var(--tx2)",fontFamily:"'Barlow Condensed',sans-serif"}},nm),
-              el("span",{style:{fontSize:"10px",color,fontWeight:"700",fontFamily:"'Barlow Condensed',sans-serif"}},`${p2}%`)
-            ),
-            d({style:{height:"4px",background:"var(--bg3)",borderRadius:"2px",overflow:"hidden"}},
-              d({style:{height:"100%",width:`${p2}%`,background:color,borderRadius:"2px",transition:"width .6s ease"}})
-            )
-          );
-        }).filter(Boolean)
+    d({style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}},
+      d({},
+        d({class:"grad-text",style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"26px"}},`LV.${lv.level}`),
+        d({style:{fontSize:"11px",color:"var(--tx2)",marginTop:"1px"}},S.activeTitle||"칭호 없음")
+      ),
+      d({style:{textAlign:"right"}},
+        d({style:{fontSize:"10px",color:"var(--tx3)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px"}},"NEXT LEVEL"),
+        d({style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"15px",color:"var(--or)"}},`${(lv.need-lv.cur).toLocaleString()} XP`)
       )
-    )
+    ),
+    d({style:{height:"10px",background:"var(--bg3)",borderRadius:"5px",overflow:"hidden",marginBottom:"6px"}},
+      d({class:"xpf",style:{width:`${lv.pct}%`,borderRadius:"5px"}})
+    ),
+    d({style:{display:"flex",justifyContent:"space-between",marginBottom: nxtR?"12px":"0"}},
+      el("span",{style:{fontSize:"10px",color:"var(--tx3)",fontFamily:"'Barlow Condensed',sans-serif"}},`${lv.cur.toLocaleString()} XP`),
+      el("span",{style:{fontSize:"10px",color:"var(--tx3)",fontFamily:"'Barlow Condensed',sans-serif"}},`${lv.need.toLocaleString()} XP`)
+    ),
+    nxtR?d({style:{padding:"10px 12px",background:"var(--ors)",borderRadius:"var(--rs)",display:"flex",alignItems:"center",gap:"10px"}},
+      el("span",{style:{fontSize:"16px"}},"🎯"),
+      d({style:{flex:"1"}},
+        d({style:{fontSize:"10px",color:"var(--tx3)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px"}},"NEXT REWARD"),
+        d({style:{fontSize:"12px",color:"var(--tx)",fontWeight:"600"}},`LV.${nxtR.level} — ${nxtR.value}`)
+      )
+    ):null
   ));
 
-  // Stats
-  f.appendChild(d({class:"slbl"},"통계"));
-  const allDn=Object.values(S.dailyLogs).reduce((s,l)=>{
-    return s+aQ.filter(q=>l.completed?.[q.id]).length+(l.bonusQuests||[]).filter(b=>b.done).length;
-  },0);
+  // STREAK
+  f.appendChild(d({class:"slbl"},"연속 달성"));
+  f.appendChild((()=>{
+    let streak=0,maxStreak=0,tmp=0;
+    const checkDt=new Date();checkDt.setTime(checkDt.getTime()+9*60*60*1000);
+    for(let i=0;i<365;i++){
+      const k=checkDt.toISOString().slice(0,10);
+      const l2=S.dailyLogs[k];
+      if(l2){const dn=aQ.filter(q=>l2.completed?.[q.id]).length+(l2.bonusQuests||[]).filter(b=>b.done).length;const tot=aQ.length+(l2.bonusQuests||[]).length;if(tot>0&&dn/tot>=0.5){streak++;}else break;}
+      else if(i===0){} else break;
+      checkDt.setDate(checkDt.getDate()-1);
+    }
+    Object.keys(S.dailyLogs).sort().forEach(date=>{
+      const l2=S.dailyLogs[date];const dn=aQ.filter(q=>l2.completed?.[q.id]).length+(l2.bonusQuests||[]).filter(b=>b.done).length;const tot=aQ.length+(l2.bonusQuests||[]).length;
+      if(tot>0&&dn/tot>=0.5){tmp++;maxStreak=Math.max(maxStreak,tmp);}else tmp=0;
+    });
+    const totalDn=Object.values(S.dailyLogs).reduce((s,l2)=>s+aQ.filter(q=>l2.completed?.[q.id]).length+(l2.bonusQuests||[]).filter(b=>b.done).length,0);
+    return d({class:"card",style:{marginBottom:"14px",padding:"14px"}},
+      d({style:{display:"flex",gap:"8px"}},
+        ...[
+          {icon:"🔥",label:"현재 연속",val:`${streak}일`,c:streak>0?"var(--or)":"var(--tx3)"},
+          {icon:"🏅",label:"최고 기록",val:`${maxStreak}일`,c:"var(--bl)"},
+          {icon:"✅",label:"총 완료",val:`${totalDn}개`,c:"var(--gr)"},
+        ].map(({icon,label,val,c})=>d({style:{flex:"1",textAlign:"center",padding:"10px 4px",background:"var(--bg3)",borderRadius:"var(--rs)"}},
+          d({style:{fontSize:"18px",marginBottom:"4px"}},icon),
+          d({style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"17px",color:c}},val),
+          d({style:{fontSize:"9px",color:"var(--tx3)",letterSpacing:"1px",marginTop:"2px"}},label)
+        ))
+      )
+    );
+  })());
+
+  // WEEKLY XP BAR CHART
+  f.appendChild(d({class:"slbl"},"주간 XP"));
   f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"16px"}},
-    d({style:{display:"flex",flexDirection:"column",gap:"11px"}},
-      ...[
-        {l:"기록된 날짜",v:`${Object.keys(S.dailyLogs).length}일`},
-        {l:"총 완료 미션",v:`${allDn}개`},
-        {l:"다음 레벨까지",v:`${(lv.need-lv.cur).toLocaleString()} XP`},
-      ].map(({l,v})=>d({style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-        el("span",{style:{fontSize:"12px",color:"var(--tx2)"}},l),
-        el("span",{style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800",fontSize:"14px",color:"var(--tx)"}},v)
-      ))
+    (()=>{
+      const days=[];
+      for(let i=6;i>=0;i--){
+        const dt=new Date();dt.setTime(dt.getTime()+9*60*60*1000);dt.setDate(dt.getDate()-i);
+        const k=dt.toISOString().slice(0,10);
+        const l2=S.dailyLogs[k]||{completed:{},bonusQuests:[]};
+        const xpE=aQ.filter(q=>l2.completed?.[q.id]).reduce((s,q)=>s+q.xp,0)+(l2.bonusQuests||[]).filter(b=>b.done).reduce((s,b)=>s+b.xp,0);
+        const dn=aQ.filter(q=>l2.completed?.[q.id]).length+(l2.bonusQuests||[]).filter(b=>b.done).length;
+        const tot=aQ.length+(l2.bonusQuests||[]).length;
+        days.push({k,xp:xpE,pct:tot?Math.round((dn/tot)*100):0,lbl:dt.toLocaleDateString("ko-KR",{weekday:"short"}),isToday:i===0});
+      }
+      const maxXP=Math.max(...days.map(x=>x.xp),1);
+      return d({style:{display:"flex",alignItems:"flex-end",gap:"5px",height:"110px",paddingTop:"18px",position:"relative"}},
+        ...days.map(day=>d({style:{flex:"1",display:"flex",flexDirection:"column",alignItems:"center",gap:"4px",height:"100%",justifyContent:"flex-end",position:"relative"}},
+          day.xp>0?d({style:{position:"absolute",top:"0",left:"50%",transform:"translateX(-50%)",fontSize:"9px",color:day.isToday?"var(--or)":"var(--tx3)",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"700",whiteSpace:"nowrap"}},String(day.xp)):null,
+          d({style:{
+            width:"100%",
+            height:`${Math.max((day.xp/maxXP)*76,day.xp>0?4:2)}px`,
+            background:day.pct===100?"linear-gradient(180deg,#00D4AA,#00B894)":day.isToday?"linear-gradient(180deg,#FFD700,#F4A000)":"var(--bg3)",
+            borderRadius:"4px 4px 0 0",
+            transition:"height .6s ease",
+            boxShadow:day.isToday?"0 0 10px var(--org)":"none",
+            border:day.xp>0&&!day.isToday?"1px solid rgba(255,140,0,.2)":"none"
+          }}),
+          d({style:{fontSize:"9px",color:day.isToday?"var(--or)":"var(--tx3)",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:day.isToday?"700":"400",marginTop:"4px"}},day.lbl)
+        ))
+      );
+    })()
+  ));
+
+  // CATEGORY ACCUMULATED XP
+  f.appendChild(d({class:"slbl"},"카테고리별 누적 XP"));
+  f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"16px"}},
+    (()=>{
+      const catXP={};
+      Object.values(S.dailyLogs).forEach(l2=>{
+        aQ.forEach(q=>{if(l2.completed?.[q.id])catXP[q.category]=(catXP[q.category]||0)+q.xp;});
+        (l2.bonusQuests||[]).filter(b=>b.done).forEach(b=>{catXP["커스텀"]=(catXP["커스텀"]||0)+b.xp;});
+      });
+      const entries=Object.entries(CAT).map(([nm,{color}])=>({nm,color,xp:catXP[nm]||0}));
+      const maxXP=Math.max(...entries.map(e=>e.xp),1);
+      const hasData=entries.some(e=>e.xp>0);
+      if(!hasData)return d({style:{color:"var(--tx3)",fontSize:"12px",textAlign:"center",padding:"10px 0"}},"아직 기록 없음");
+      return d({style:{display:"flex",flexDirection:"column",gap:"11px"}},
+        ...entries.map(({nm,color,xp})=>d({},
+          d({style:{display:"flex",justifyContent:"space-between",marginBottom:"5px"}},
+            el("span",{style:{fontSize:"12px",color:"var(--tx2)",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"600"}},nm),
+            el("span",{style:{fontSize:"12px",color,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"800"}},`${xp.toLocaleString()} XP`)
+          ),
+          d({style:{height:"7px",background:"var(--bg3)",borderRadius:"4px",overflow:"hidden"}},
+            d({style:{height:"100%",width:`${(xp/maxXP)*100}%`,background:color,borderRadius:"4px",transition:"width .7s ease",minWidth:xp>0?"4px":"0",boxShadow:`0 0 6px ${color}44`}})
+          )
+        ))
+      );
+    })()
+  ));
+
+  // TODAY QUEST GRID
+  f.appendChild(d({class:"slbl"},"오늘 퀘스트 현황"));
+  f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"16px"}},
+    d({style:{display:"flex",flexWrap:"wrap",gap:"7px"}},
+      ...aQ.map(q=>{
+        const done=!!log.completed?.[q.id];
+        const cat=CAT[q.category];
+        return d({style:{display:"flex",alignItems:"center",gap:"7px",padding:"8px 10px",borderRadius:"var(--rs)",background:done?(cat?.color+"15"):"var(--bg3)",border:`1px solid ${done?(cat?.color+"44"):"var(--bd2)"}`,flex:"1 0 140px",transition:"all .2s"}},
+          el("span",{style:{fontSize:"15px",opacity:done?"1":"0.35"}},q.emoji),
+          d({style:{flex:"1",minWidth:"0"}},
+            d({style:{fontSize:"11px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"600",color:done?"var(--tx)":"var(--tx3)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},q.title),
+            d({style:{fontSize:"9px",color:done?(cat?.color):"var(--tx3)",marginTop:"2px"}},done?(`+${q.xp} XP`):"미완료")
+          ),
+          done?el("span",{style:{color:cat?.color,fontSize:"13px",fontWeight:"900",flexShrink:"0"}},"✓"):null
+        );
+      })
     )
   ));
 
-  // Unclaimed
+  // UNCLAIMED REWARDS
   const uncl=S.rewards.filter(r=>!r.claimed&&lv.level>=r.level);
   if(uncl.length>0){
     f.appendChild(d({class:"slbl"},"미수령 보상"));
-    f.appendChild(d({style:{background:"var(--ors)",border:"1px solid var(--bd)",borderRadius:"var(--r)",padding:"14px",animation:"gp 2s ease-in-out infinite"}},
+    f.appendChild(d({style:{background:"var(--ors)",border:"1px solid var(--bd)",borderRadius:"var(--r)",padding:"14px",marginBottom:"14px",animation:"gp 2s ease-in-out infinite"}},
       ...uncl.map((r,i)=>d({style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:i<uncl.length-1?"10px":"0"}},
-        el("span",{style:{fontSize:"20px"}},"🎁"),
+        el("span",{style:{fontSize:"18px"}},"🎁"),
         d({style:{flex:"1"}},
           d({style:{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:"700",fontSize:"12px",color:"var(--or)"}},`LV.${r.level} 달성!`),
           d({style:{fontSize:"12px",color:"var(--tx)"}},r.value)
@@ -724,10 +820,11 @@ function renderRight(){
   }
   return f;
 }
+function renderRight(){return renderChartsPanel();}
 
 /* ── LEFT SIDEBAR ── */
 function renderLeft(lv){
-  const NAV=[["today","⚔️","오늘"],["history","📅","기록"],["quests","⚙️","미션"],["rewards","🏆","보상"]];
+  const NAV=[["today","⚔️","오늘"],["history","📅","기록"],["quests","⚙️","미션"],["rewards","🏆","보상"],["charts","📊","도표"]];
   return d({class:"sl"},
     // Logo + toggle
     d({style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"4px"}},
@@ -836,7 +933,7 @@ function render(){
   }
 
   const lv=getLv(S.profile.totalXP);
-  const NAV=[["today","⚔️","오늘"],["history","📅","기록"],["quests","⚙️","미션"],["rewards","🏆","보상"]];
+  const NAV=[["today","⚔️","오늘"],["history","📅","기록"],["quests","⚙️","미션"],["rewards","🏆","보상"],["charts","📊","도표"]];
   const layout=d({class:"layout"});
 
   // Left sidebar
@@ -864,7 +961,7 @@ function render(){
 
   if(S.syncErr)mc.appendChild(d({class:"errbar"},el("span",{},S.syncErr),b({style:{background:"none",border:"none",color:"var(--rd)",cursor:"pointer",fontSize:"16px"},onclick:()=>setState({syncErr:""})},"✕")));
 
-  const panels={today:renderToday,history:renderHistory,quests:renderQuests,rewards:renderRewards};
+  const panels={today:renderToday,history:renderHistory,quests:renderQuests,rewards:renderRewards,charts:renderChartsPanel};
   const pf=panels[S.tab]();
   if(pf instanceof DocumentFragment||pf instanceof HTMLElement)mc.appendChild(pf);
   layout.appendChild(mc);
