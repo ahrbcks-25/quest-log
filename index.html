@@ -104,7 +104,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .toast-pill{background:linear-gradient(135deg,rgba(255,107,0,.97),rgba(244,160,0,.97));backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.25);border-radius:50px;padding:12px 26px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 40px rgba(244,160,0,.45),0 0 80px rgba(244,160,0,.15);white-space:nowrap}
 
 /* ── CARDS ── */
-.card{background:var(--panel);border:1px solid var(--bd2);border-radius:var(--r);box-shadow:var(--sh);padding:18px 20px}
+.card{background:var(--panel);border:1px solid var(--bd2);border-radius:var(--r);box-shadow:var(--sh);padding:18px 20px}.chart-lg{min-height:100px}
 .stat-c{flex:1;background:var(--panel);border:1px solid var(--bd2);box-shadow:var(--sh);padding:13px 8px;text-align:center;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px))}
 .hcard{background:var(--panel);border:1px solid var(--bd2);box-shadow:var(--sh);clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));padding:14px 16px;margin-bottom:8px}
 .rwcard{display:flex;align-items:center;gap:12px;padding:13px 16px;margin-bottom:8px;border:1px solid;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));transition:all .2s}
@@ -158,13 +158,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 
 /* ── LAYOUT ── */
 #app{min-height:100vh}
-.layout{display:grid;grid-template-columns:240px 1fr 290px;grid-template-rows:100vh;min-height:100vh}
+.layout{display:grid;grid-template-columns:200px 1fr 460px;grid-template-rows:100vh;min-height:100vh}
 .sl{background:var(--bg2);border-right:1px solid var(--bd2);padding:22px 14px;overflow-y:auto;display:flex;flex-direction:column;transition:background .3s}
 .mc{overflow-y:auto;padding:28px 30px;background:var(--bg);transition:background .3s}
-.sr{background:var(--bg2);border-left:1px solid var(--bd2);padding:22px 14px;overflow-y:auto;transition:background .3s}
+.sr{background:var(--bg2);border-left:1px solid var(--bd2);padding:22px 18px;overflow-y:auto;transition:background .3s}
 .mob-nav{display:none}
 .mob-head{display:none}
-@media(max-width:1100px){.layout{grid-template-columns:220px 1fr}.sr{display:none}}
+@media(max-width:1300px){.layout{grid-template-columns:190px 1fr 380px}}@media(max-width:1000px){.layout{grid-template-columns:190px 1fr 300px}}@media(max-width:860px){.layout{grid-template-columns:190px 1fr}.sr{display:none}}
 @media(max-width:767px){
   .layout{display:block}
   .sl,.sr{display:none}
@@ -183,28 +183,48 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 /* ── CONSTANTS ── */
 const TODAY=()=>new Date().toISOString().slice(0,10);
 const LS_URL="ql-url",LS_THEME="ql-theme",LS_TITLE="ql-title";
-const XPL=lv=>Math.floor(120*Math.pow(lv,1.55));
+// XP curve: 초반 빠름(1~5), 중반 완만(6~15), 후반 도전적(16+)
+// Lv1: 200, Lv5: ~800, Lv10: ~2200, Lv20: ~7000, Lv30: ~16000
+const XPL=lv=>{
+  if(lv<=5)  return Math.floor(200*Math.pow(lv,1.3));
+  if(lv<=15) return Math.floor(180*Math.pow(lv,1.65));
+  return Math.floor(150*Math.pow(lv,1.9));
+};
 function getLv(xp){let lv=1,acc=0;while(true){const n=XPL(lv);if(acc+n>xp)return{level:lv,cur:xp-acc,need:n,pct:((xp-acc)/n)*100};acc+=n;lv++;}}
 const CAT={"마인드":{color:"#7B68EE"},"바디":{color:"#00B894"},"성장":{color:"#F4A000"},"커스텀":{color:"#E84460"}};
+// 기본 퀘스트 XP 설계:
+// - 쉬움(5~10분, 습관성): 40~60 XP
+// - 보통(15~30분, 노력필요): 80~120 XP
+// - 어려움(집중력/지속성): 150~200 XP
+// 데일리 풀 완료 시 총 ~590 XP → Lv1 하루 완료 = 약 3일에 레벨업
 const DQ=[
-  {id:"q1",title:"명상 10분",category:"마인드",emoji:"🧘",xp:50,active:true},
-  {id:"q2",title:"운동 30분",category:"바디",emoji:"💪",xp:100,active:true},
-  {id:"q3",title:"독서 20페이지",category:"성장",emoji:"📚",xp:80,active:true},
-  {id:"q4",title:"물 2L 마시기",category:"바디",emoji:"💧",xp:30,active:true},
-  {id:"q5",title:"감사일기 3줄",category:"마인드",emoji:"🌿",xp:40,active:true},
-  {id:"q6",title:"학습 15분",category:"성장",emoji:"💻",xp:70,active:true},
+  {id:"q1",title:"명상 10분",    category:"마인드",emoji:"🧘",xp:45, active:true},
+  {id:"q2",title:"운동 30분",    category:"바디",  emoji:"💪",xp:120,active:true},
+  {id:"q3",title:"독서 20페이지",category:"성장",  emoji:"📚",xp:100,active:true},
+  {id:"q4",title:"물 2L 마시기", category:"바디",  emoji:"💧",xp:35, active:true},
+  {id:"q5",title:"감사일기 3줄", category:"마인드",emoji:"🌿",xp:50, active:true},
+  {id:"q6",title:"학습 15분",    category:"성장",  emoji:"💻",xp:80, active:true},
 ];
+// 보상 설계 철학:
+// - 초반(1~5): 2레벨마다 칭호 → 빠른 성취감
+// - 중반(6~15): 현실보상 + 칭호 교차 → 지속 동기
+// - 후반(16+): 희귀 칭호 + 큰 보상 → 장기 목표
+// 칭호 서사: 신입 → 각성 → 전사 → 영웅 → 전설 → 신화
 const DR=[
-  {level:2,type:"title",value:"🌱 새싹 탐험가",claimed:false},
-  {level:3,type:"real",value:"좋아하는 카페 방문 ☕",claimed:false},
-  {level:4,type:"title",value:"⚡ 각성한 자",claimed:false},
-  {level:5,type:"real",value:"치킨 사먹기 🍗",claimed:false},
-  {level:6,type:"title",value:"🔥 불꽃 전사",claimed:false},
-  {level:7,type:"real",value:"원하는 물건 구매 🛍️",claimed:false},
-  {level:8,type:"title",value:"💎 다이아몬드 영혼",claimed:false},
-  {level:10,type:"real",value:"특별한 여행 계획 ✈️",claimed:false},
-  {level:12,type:"title",value:"🌟 전설의 존재",claimed:false},
-  {level:15,type:"real",value:"나만의 특별 보상 🏆",claimed:false},
+  {level:2, type:"title",value:"🌱 첫 발걸음",         claimed:false},
+  {level:3, type:"real", value:"좋아하는 카페 방문 ☕",  claimed:false},
+  {level:5, type:"title",value:"⚡ 각성자",              claimed:false},
+  {level:6, type:"real", value:"치킨 or 피자 한 판 🍗",  claimed:false},
+  {level:8, type:"title",value:"🔥 의지의 전사",         claimed:false},
+  {level:10,type:"real", value:"원하는 물건 구매 🛍️",   claimed:false},
+  {level:12,type:"title",value:"💎 습관의 결정체",        claimed:false},
+  {level:15,type:"real", value:"특별한 외식 or 공연 🎭",  claimed:false},
+  {level:18,type:"title",value:"🌟 자기 극복자",          claimed:false},
+  {level:20,type:"real", value:"원하는 여행 계획 ✈️",    claimed:false},
+  {level:25,type:"title",value:"👑 루틴의 군주",          claimed:false},
+  {level:30,type:"real", value:"나만의 특별 보상 🏆",     claimed:false},
+  {level:35,type:"title",value:"🔱 전설의 경지",          claimed:false},
+  {level:50,type:"title",value:"⚜️ 불멸의 존재",          claimed:false},
 ];
 
 /* ── JSONP ── */
@@ -329,11 +349,11 @@ function weekChart(){
   const days=[];
   for(let i=6;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);const k=dt.toISOString().slice(0,10);const l=S.dailyLogs[k]||{completed:{},bonusQuests:[]};const aQ=S.quests.filter(q=>q.active);const dn=aQ.filter(q=>l.completed?.[q.id]).length+(l.bonusQuests||[]).filter(b=>b.done).length;const tot=aQ.length+(l.bonusQuests||[]).length;days.push({k,dn,tot,pct:tot?Math.round((dn/tot)*100):0,lbl:dt.toLocaleDateString("ko-KR",{weekday:"short"})});}
   const max=Math.max(...days.map(d=>d.pct),1);
-  const W=240,H=80,pad=6;
+  const W=420,H=140,pad=10;
   const pts=days.map((d,i)=>({x:pad+(i/(days.length-1))*(W-pad*2),y:H-pad-(d.pct/max)*(H-pad*2-10),...d}));
   const ns="http://www.w3.org/2000/svg";
   const svg=document.createElementNS(ns,"svg");
-  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("width","100%");svg.setAttribute("height","80");
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("width","100%");svg.setAttribute("height","140");
   const defs=document.createElementNS(ns,"defs");
   const gr=document.createElementNS(ns,"linearGradient");gr.setAttribute("id","wcg");gr.setAttribute("x1","0");gr.setAttribute("y1","0");gr.setAttribute("x2","0");gr.setAttribute("y2","1");
   const st1=document.createElementNS(ns,"stop");st1.setAttribute("offset","0%");st1.setAttribute("stop-color","#F4A000");st1.setAttribute("stop-opacity","0.3");
@@ -360,8 +380,8 @@ function catDonut(){
   S.quests.filter(q=>q.active).forEach(q=>{if(!cats[q.category])cats[q.category]={tot:0,dn:0,color:CAT[q.category]?.color||"#888"};cats[q.category].tot++;if(log.completed?.[q.id])cats[q.category].dn++;});
   const ents=Object.entries(cats);
   if(!ents.length)return d({style:{color:"var(--tx3)",fontSize:"12px",textAlign:"center",padding:"16px 0"}},"기록 없음");
-  const ns="http://www.w3.org/2000/svg",sz=110,r=42,cx=55,cy=55;
-  const svg=document.createElementNS(ns,"svg");svg.setAttribute("viewBox","0 0 110 110");svg.setAttribute("width","110");svg.setAttribute("height","110");
+  const ns="http://www.w3.org/2000/svg",sz=150,r=58,cx=75,cy=75;
+  const svg=document.createElementNS(ns,"svg");svg.setAttribute("viewBox","0 0 150 150");svg.setAttribute("width","150");svg.setAttribute("height","150");
   let ang=-90;
   const tot=ents.reduce((s,[,v])=>s+v.tot,0);
   ents.forEach(([,v])=>{
@@ -373,10 +393,10 @@ function catDonut(){
     p.setAttribute("fill",v.color);p.setAttribute("opacity",v.tot>0?(0.3+0.7*(v.dn/v.tot)):0.3);
     svg.appendChild(p);
   });
-  const h=document.createElementNS(ns,"circle");h.setAttribute("cx",cx);h.setAttribute("cy",cy);h.setAttribute("r","26");h.setAttribute("fill","var(--bg2)");svg.appendChild(h);
+  const h=document.createElementNS(ns,"circle");h.setAttribute("cx",cx);h.setAttribute("cy",cy);h.setAttribute("r","38");h.setAttribute("fill","var(--bg2)");svg.appendChild(h);
   const dnAll=ents.reduce((s,[,v])=>s+v.dn,0);
-  const t1=document.createElementNS(ns,"text");t1.setAttribute("x",cx);t1.setAttribute("y",cy-2);t1.setAttribute("text-anchor","middle");t1.setAttribute("font-size","15");t1.setAttribute("font-weight","800");t1.setAttribute("font-family","Barlow Condensed,sans-serif");t1.setAttribute("fill","var(--tx)");t1.textContent=`${dnAll}/${tot}`;svg.appendChild(t1);
-  const t2=document.createElementNS(ns,"text");t2.setAttribute("x",cx);t2.setAttribute("y",cy+11);t2.setAttribute("text-anchor","middle");t2.setAttribute("font-size","8");t2.setAttribute("font-family","Barlow Condensed,sans-serif");t2.setAttribute("fill","var(--tx3)");t2.textContent="완료";svg.appendChild(t2);
+  const t1=document.createElementNS(ns,"text");t1.setAttribute("x",cx);t1.setAttribute("y",cy-3);t1.setAttribute("text-anchor","middle");t1.setAttribute("font-size","15");t1.setAttribute("font-weight","800");t1.setAttribute("font-family","Barlow Condensed,sans-serif");t1.setAttribute("fill","var(--tx)");t1.textContent=`${dnAll}/${tot}`;svg.appendChild(t1);
+  const t2=document.createElementNS(ns,"text");t2.setAttribute("x",cx);t2.setAttribute("y",cy+13);t2.setAttribute("text-anchor","middle");t2.setAttribute("font-size","8");t2.setAttribute("font-family","Barlow Condensed,sans-serif");t2.setAttribute("fill","var(--tx3)");t2.textContent="완료";svg.appendChild(t2);
   return svg;
 }
 
@@ -609,11 +629,11 @@ function renderRight(){
 
   // Week chart
   f.appendChild(d({class:"slbl"},"주간 활동"));
-  f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"14px"}},weekChart()));
+  f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"16px 14px"}},weekChart()));
 
   // Category donut + bars
   f.appendChild(d({class:"slbl"},"카테고리 현황"));
-  f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"14px"}},
+  f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"16px"}},
     d({style:{display:"flex",gap:"14px",alignItems:"center"}},
       catDonut(),
       d({style:{flex:"1",display:"flex",flexDirection:"column",gap:"9px"}},
@@ -639,7 +659,7 @@ function renderRight(){
   const allDn=Object.values(S.dailyLogs).reduce((s,l)=>{
     return s+aQ.filter(q=>l.completed?.[q.id]).length+(l.bonusQuests||[]).filter(b=>b.done).length;
   },0);
-  f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"14px"}},
+  f.appendChild(d({class:"card",style:{marginBottom:"14px",padding:"16px"}},
     d({style:{display:"flex",flexDirection:"column",gap:"11px"}},
       ...[
         {l:"기록된 날짜",v:`${Object.keys(S.dailyLogs).length}일`},
